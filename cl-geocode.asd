@@ -12,7 +12,7 @@
 (asdf:defsystem cl-geocode
     :default-component-class cl-geocode-source-file
     :components ((:file "package")
-		 (:file "zip-util")
+		 (:file "zip-util" :depends-on ("package"))
 		 (:file "geocode" :depends-on ("package" "zip-util")))
     #+sbcl :depends-on
-    #+sbcl ("aserve" "acl-compat" "cl-ppcre"))
+    #+sbcl ("drakma" "cl-ppcre"))

@@ -5,27 +5,28 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-(eval-when (compile eval load) (require :aserve))
+#+allegro (eval-when (compile eval load) (require :aserve))
 
 (defpackage :cl-geocode
   (:use #:common-lisp
 	#+allegro #:excl
-	#-allegro #:acl-compat.excl
-	#:net.aserve
-	#:net.aserve.client)
-  
+	;;#-allegro #:acl-compat.excl
+	#+allegro #:net.aserve
+	#+allegro #:net.aserve.client
+        #+sbcl :drakma)
+
   #+sbcl
   (:import-from #:puri #:delimited-string-to-list)
   (:export #:location
 	   #:location-latitude
 	   #:location-longitude
 	   #:make-location
-	   
+
 	   #:distance-between
 	   #:location-near-p)
-  
+
   (:export #:*zipcodes*
-	   
+
 	   #:zipcode-p
 	   #:zipcode-code
 	   #:zipcode-state-abbrev
@@ -33,9 +34,9 @@
 	   #:zipcode-longitude
 	   #:zipcode-city
 	   #:zipcode-state
-	   
+
 	   #:location-to-zipcode)
-  
+
   (:export #:*default-key*
 	   #:geocode
 	   #:place-to-location

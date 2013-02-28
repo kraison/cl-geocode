@@ -61,7 +61,7 @@ values of the keyword UNIT can be :miles (the default), :nautical-miles or
 ;; to read in the zips.csv file so the data can be constructed at load time.
 ;;
 ;; The technique used:
-;; 
+;;
 ;; At compile time read the zips.csv file, creating a (temporary) simple
 ;; vector of zipcode structs.  Then, write the 5 slots of each zipcode struct
 ;; into 5 different vectors.  Then, at load time, we create *zipcodes*.
@@ -78,7 +78,7 @@ values of the keyword UNIT can be :miles (the default), :nautical-miles or
 	       (prog2
 		   (progn (format t "reading zips.cvs...")
 			  (force-output))
-		   (read-zipcodes-csv 
+		   (read-zipcodes-csv
 		    (merge-pathnames "zips.csv" *compile-file-pathname*))
 		 (format t "done~%"))))
 	  (list 'list
@@ -140,7 +140,7 @@ values of the keyword UNIT can be :miles (the default), :nautical-miles or
       (setq min-diff diff))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; See 
+;; See
 ;; http://www.google.com/apis/maps/documentation/#Geocoding_HTTP_Request
 
 (defvar *default-key* nil
@@ -163,16 +163,25 @@ obtain from the http://www.google.com/apis/maps/signup.html."))
     (case output
       ((:csv :xml :kml :json) (string-downcase (symbol-name output)))
       (t (error "Bad :output keyword value: ~s." output))))
-  (let ((query (query-to-form-urlencoded
-		`(("q" . ,q) ("output" . ,output) ("key" . ,key))))
-	(url-base "http://maps.google.com/maps/geo"))
-    (values
-     (do-http-request (format nil "~a?~a" url-base query)
+     #+allegro
+     (let ((query (query-to-form-urlencoded
+                   `(("q" . ,q) ("output" . ,output) ("key" . ,key))))
+           (url-base "http://maps.google.com/maps/geo"))
+       (values
+        (do-http-request (format nil "~a?~a" url-base query)
+          :method :get
+          ;; Dunno if this is needed.  I started getting "connection reset by
+          ;; peer" for a while, so I added this.  About the time I added it I
+          ;; stopped getting them.  Hmmmmmmm.
+          :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")))
+     #+sbcl
+     (values
+      (http-request
+       "http://maps.google.com/maps/geo"
        :method :get
-       ;; Dunno if this is needed.  I started getting "connection reset by
-       ;; peer" for a while, so I added this.  About the time I added it I
-       ;; stopped getting them.  Hmmmmmmm.
-       :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9"))))
+       :parameters `(("q" . ,q) ("output" . ,output) ("key" . ,key))
+       :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")
+     ))
 
 (defvar *place-to-location-re*
     (let ((re "200,[^,]+,(-?[0-9.]+),(-?[0-9.]+)"))

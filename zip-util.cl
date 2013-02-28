@@ -31,9 +31,9 @@
 				:location (make-location
 					   :latitude (string-to-number lat)
 					   :longitude (string-to-number lon))
-				:city (if* (= 0 (length city))
-					 then nil
-					 else city)
+				:city (if (= 0 (length city))
+                                          nil
+                                          city)
 				:state state)
 		  zips)))
 	(setq zips (make-array nzips :initial-contents zips))
@@ -41,12 +41,12 @@
 	;; Sort on longitude, then latitude
 	(sort zips
 	      (lambda (z1 z2)
-		(if* (= (location-longitude (zipcode-location z1))
-			(location-longitude (zipcode-location z2)))
-		   then (< (location-latitude (zipcode-location z1))
-			   (location-latitude (zipcode-location z2)))
-		   else (< (location-longitude (zipcode-location z1))
-			   (location-longitude (zipcode-location z2))))))))))
+		(if (= (location-longitude (zipcode-location z1))
+                       (location-longitude (zipcode-location z2)))
+                    (< (location-latitude (zipcode-location z1))
+                       (location-latitude (zipcode-location z2)))
+                    (< (location-longitude (zipcode-location z1))
+                       (location-longitude (zipcode-location z2))))))))))
 
 (defun vector-of (vector function)
   ;; Return a vector based on the contents of VECTOR created by calling
