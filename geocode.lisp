@@ -147,7 +147,7 @@ values of the keyword UNIT can be :miles (the default), :nautical-miles or
   "A default Google Maps API key for calls to geocode.  You can obtain a
 key by visiting http://www.google.com/apis/maps/signup.html.")
 
-(defun geocode (&key q (key *default-key*) (output :csv))
+(defun geocode (&key q (key *default-key*) (output :csv) sensor)
   "Geocoding is the process of converting addresses (like \"1600
 Amphitheatre Parkway, Mountain View, CA\") into geographic coodinates (like
 latitude 37.423021 and longitude -122.083739), which you can use to place
@@ -161,12 +161,12 @@ obtain from the http://www.google.com/apis/maps/signup.html."))
     (error "You must specify an address to geocode (e.g., \"Oakland, CA\")."))
   (setq output
     (case output
-      ((:csv :xml :kml :json) (string-downcase (symbol-name output)))
+      ((:xml :json) (string-downcase (symbol-name output)))
       (t (error "Bad :output keyword value: ~s." output))))
      #+allegro
      (let ((query (query-to-form-urlencoded
-                   `(("q" . ,q) ("output" . ,output) ("key" . ,key))))
-           (url-base "http://maps.google.com/maps/geo"))
+                   `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))))
+           (url-base (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)))
        (values
         (do-http-request (format nil "~a?~a" url-base query)
           :method :get
@@ -177,38 +177,23 @@ obtain from the http://www.google.com/apis/maps/signup.html."))
      #+sbcl
      (values
       (http-request
-       "http://maps.google.com/maps/geo"
+       (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)
        :method :get
-       :parameters `(("q" . ,q) ("output" . ,output) ("key" . ,key))
-       :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")
+       :parameters `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))
+       :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9"
+       )
      ))
 
-(defvar *place-to-location-re*
-    (let ((re "200,[^,]+,(-?[0-9.]+),(-?[0-9.]+)"))
-      #+allegro (compile-re re)
-      #+sbcl (cl-ppcre:create-scanner re)))
-
-(defun place-to-location (place &key (key *default-key*)
-			  &aux (re *place-to-location-re*))
-  (let ((result (geocode :q place :key key :output :csv)))
-    ;; Using :csv, a good result starts with "200," and a bad result with
-    ;; "602,".
-    (when (and result (stringp result))
-      #+sbcl
-      (multiple-value-bind (found res-vec)
-	  (cl-ppcre:scan-to-strings re result)
-	(when found
-	  (make-location
-	   :latitude (read-from-string (aref res-vec 0))
-	   :longitude (read-from-string (aref res-vec 1)))))
-      #+allegro
-      (multiple-value-bind (found whole lat lon)
-	  (match-re re result)
-	(declare (ignore whole))
-	(when found
-	  (make-location
-	   :latitude (read-from-string lat)
-	   :longitude (read-from-string lon)))))))
+(defun place-to-location (place &key (key *default-key*) sensor)
+  (let ((result (json:decode-json-from-string
+                 (babel:octets-to-string
+                  (geocode :q place :key key :output :json :sensor sensor)))))
+    (when (and result (cdr (assoc :results result)))
+      (let ((lat-long (cdr (assoc :location (cdr (assoc :geometry (second (assoc :results result))))))))
+        (when lat-long
+          (make-location
+           :latitude (cdr (assoc :lat lat-long))
+           :longitude (cdr (assoc :lng lat-long))))))))
 
 (defun location-to-place (location)
   (let ((zipcode (location-to-zipcode location)))

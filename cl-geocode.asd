@@ -5,4 +5,4 @@
 		 (:file "zip-util" :depends-on ("package"))
 		 (:file "geocode" :depends-on ("package" "zip-util")))
     #+sbcl :depends-on
-    #+sbcl ("drakma" "cl-ppcre"))
+    #+sbcl ("drakma" "cl-ppcre" "cl-json" "babel"))
