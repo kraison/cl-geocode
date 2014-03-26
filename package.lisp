@@ -5,17 +5,15 @@
 ;; (http://opensource.franz.com/preamble.html),
 ;; known as the LLGPL.
 
-#+allegro (eval-when (compile eval load) (require :aserve))
-
 (defpackage :cl-geocode
   (:use #:common-lisp
 	#+allegro #:excl
 	;;#-allegro #:acl-compat.excl
 	#+allegro #:net.aserve
 	#+allegro #:net.aserve.client
-        #+sbcl :drakma)
+        #-allegro :drakma)
 
-  #+sbcl
+  #-allegro
   (:import-from #:puri #:delimited-string-to-list)
   (:export #:location
 	   #:location-latitude
@@ -58,8 +56,6 @@
 
 (defmethod make-load-form ((self location) &optional environment)
   (make-load-form-saving-slots self :environment environment))
-
-
 
 
 (defstruct zipcode code state-abbrev location city state)
