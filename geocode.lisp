@@ -39,7 +39,7 @@ values of the keyword UNIT can be :miles (the default), :nautical-miles or
 	  (lat2 (radians (location-latitude location2)))
 	  (lon1 (radians (location-longitude location1)))
 	  (lon2 (radians (location-longitude location2)))
-	  (radius (case unit
+	  (radius (ecase unit
 		    (:miles 3963.0)
 		    (:nautical-miles 3437.74677)
 		    (:kilometers 6378.7))))
@@ -154,40 +154,36 @@ latitude 37.423021 and longitude -122.083739), which you can use to place
 markers or position the map based on street addresses in your database or
 addresses supplied by users. The Google Maps API includes a geocoder that
 can be accessed via HTTP request."
-  (when (null key)
-    (error "You must specify a Google Maps API key, which you can ~
-obtain from the http://www.google.com/apis/maps/signup.html."))
+  (declare (ignore key)) ;; TODO: support Google API keys
+  ;; https://developers.google.com/maps/documentation/javascript/tutorial#api_key
   (when (null q)
     (error "You must specify an address to geocode (e.g., \"Oakland, CA\")."))
   (setq output
     (case output
       ((:xml :json) (string-downcase (symbol-name output)))
       (t (error "Bad :output keyword value: ~s." output))))
-     #+allegro
-     (let ((query (query-to-form-urlencoded
-                   `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))))
-           (url-base (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)))
-       (values
-        (do-http-request (format nil "~a?~a" url-base query)
-          :method :get
-          ;; Dunno if this is needed.  I started getting "connection reset by
-          ;; peer" for a while, so I added this.  About the time I added it I
-          ;; stopped getting them.  Hmmmmmmm.
-          :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")))
-     #+sbcl
-     (values
-      (http-request
-       (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)
+  #+allegro
+  (let ((query (query-to-form-urlencoded
+                `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))))
+        (url-base (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)))
+    (values
+     (do-http-request (format nil "~a?~a" url-base query)
        :method :get
-       :parameters `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))
-       :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9"
-       )
-     ))
+       ;; Dunno if this is needed.  I started getting "connection reset by
+       ;; peer" for a while, so I added this.  About the time I added it I
+       ;; stopped getting them.  Hmmmmmmm.
+       :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")))
+  #-allegro
+  (babel:octets-to-string
+   (http-request
+    (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)
+    :method :get
+    :parameters `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))
+    :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")))
 
 (defun place-to-location (place &key (key *default-key*) sensor)
   (let ((result (json:decode-json-from-string
-                 (babel:octets-to-string
-                  (geocode :q place :key key :output :json :sensor sensor)))))
+                  (geocode :q place :key key :output :json :sensor sensor))))
     (when (and result (cdr (assoc :results result)))
       (let ((lat-long (cdr (assoc :location (cdr (assoc :geometry (second (assoc :results result))))))))
         (when lat-long
