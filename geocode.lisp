@@ -162,29 +162,28 @@ can be accessed via HTTP request."
     (case output
       ((:xml :json) (string-downcase (symbol-name output)))
       (t (error "Bad :output keyword value: ~s." output))))
-     #+allegro
-     (let ((query (query-to-form-urlencoded
-                   `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))))
-           (url-base (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)))
-       (values
-        (do-http-request (format nil "~a?~a" url-base query)
-          :method :get
-          ;; Dunno if this is needed.  I started getting "connection reset by
-          ;; peer" for a while, so I added this.  About the time I added it I
-          ;; stopped getting them.  Hmmmmmmm.
-          :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")))
-     #-allegro
-     (values
-      (http-request
-       (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)
+  #+allegro
+  (let ((query (query-to-form-urlencoded
+                `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))))
+        (url-base (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)))
+    (values
+     (do-http-request (format nil "~a?~a" url-base query)
        :method :get
-       :parameters `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))
+       ;; Dunno if this is needed.  I started getting "connection reset by
+       ;; peer" for a while, so I added this.  About the time I added it I
+       ;; stopped getting them.  Hmmmmmmm.
        :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")))
+  #-allegro
+  (babel:octets-to-string
+   (http-request
+    (format nil "http://maps.googleapis.com/maps/api/geocode/~A" output)
+    :method :get
+    :parameters `(("address" . ,q) ("sensor" . ,(if sensor "true" "false")))
+    :user-agent "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.1) Gecko/20060111 Firefox/1.5.0.9")))
 
 (defun place-to-location (place &key (key *default-key*) sensor)
   (let ((result (json:decode-json-from-string
-                 (babel:octets-to-string
-                  (geocode :q place :key key :output :json :sensor sensor)))))
+                  (geocode :q place :key key :output :json :sensor sensor))))
     (when (and result (cdr (assoc :results result)))
       (let ((lat-long (cdr (assoc :location (cdr (assoc :geometry (second (assoc :results result))))))))
         (when lat-long
