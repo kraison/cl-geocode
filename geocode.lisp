@@ -34,15 +34,15 @@ values of the keyword UNIT can be :miles (the default), :nautical-miles or
   ;;
   ;; A nice page to show this is here:
   ;;  http://www.movable-type.co.uk/scripts/LatLong.html
-  (flet ((radians (deg) (* deg (/ pi 180.0))))
+  (flet ((radians (deg) (* deg (/ pi 180f0))))
     (let ((lat1 (radians (location-latitude location1)))
 	  (lat2 (radians (location-latitude location2)))
 	  (lon1 (radians (location-longitude location1)))
 	  (lon2 (radians (location-longitude location2)))
 	  (radius (ecase unit
-		    (:miles 3963.0)
-		    (:nautical-miles 3437.74677)
-		    (:kilometers 6378.7))))
+		    (:miles 3963f0)
+		    (:nautical-miles 3437.74677f0)
+		    (:kilometers 6378.7f0))))
       (* radius
 	 (acos (+ (* (sin lat1) (sin lat2))
 		  (* (cos lat1) (cos lat2) (cos (- lon2 lon1)))))))))
@@ -119,10 +119,10 @@ values of the keyword UNIT can be :miles (the default), :nautical-miles or
 	(zipcodes *zipcodes*)
 	(max (length zipcodes))
 	(best-i 0)
-	(min-diff 10000.0)
-	(lat 0.0)
-	(lon 0.0)
-	(diff 0.0)
+	(min-diff 1f4)
+	(lat 0.0f0)
+	(lon 0.0f0)
+	(diff 0.0f0)
 	location zipcode)
       ((= i max) (svref zipcodes best-i))
     (declare (single-float rlat rlon min-diff lat lon diff)

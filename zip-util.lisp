@@ -17,7 +17,7 @@
 	   (or (ignore-errors (read-from-string string))
 	       (error "bad number: ~a." string))))
     (with-open-file (s csv-file)
-      (let (line zips (nzips 0))
+      (let (line zips (nzips 0) (*read-default-float-format* 'single-float))
 	(setq line (read-line s nil s))
 	(when (eq line s) (error "bad zips file"))
 	(loop
